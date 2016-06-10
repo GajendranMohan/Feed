@@ -33,6 +33,7 @@ public class ControllerFile {
 
 	@RequestMapping(value = "/login_google")
 	public ModelAndView go() {
+		System.out.println("Checking branch change in git.");
 		return new ModelAndView(
 				"redirect:https://accounts.google.com/o/oauth2/auth?redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&response_type=code&client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com&approval_prompt=force&scope=email&access_type=online");
 	}
