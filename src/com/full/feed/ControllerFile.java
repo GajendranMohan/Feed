@@ -12,8 +12,10 @@ import java.util.Random;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -33,9 +35,9 @@ public class ControllerFile {
 
 	@RequestMapping(value = "/login_google")
 	public ModelAndView go() {
-		System.out.println("Checking branch change in git.");
+		System.out.println("hai this is git");
 		return new ModelAndView(
-				"redirect:https://accounts.google.com/o/oauth2/auth?redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&response_type=code&client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com&approval_prompt=force&scope=email&access_type=online");
+				"redirect:https://accounts.google.com/o/oauth2/auth?redirect_uri=http://localhost:8080/get_authz_code&response_type=code&client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com&approval_prompt=force&scope=email&access_type=online");
 	}
 
 	@RequestMapping(value = "/get_authz_code")
@@ -52,7 +54,7 @@ public class ControllerFile {
 
 		URL url = new URL("https://www.googleapis.com/oauth2/v3/token?"
 				+ "client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com"
-				+ "&client_secret=XKZUtW4qzzeBWVq9kd58YzSy&" + "redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&"
+				+ "&client_secret=XKZUtW4qzzeBWVq9kd58YzSy&" + "redirect_uri=http://localhost:8080/get_authz_code&"
 				+ "grant_type=authorization_code&" + "code=" + auth_code);
 		HttpURLConnection connect = (HttpURLConnection) url.openConnection();
 		connect.setRequestMethod("POST");
@@ -118,10 +120,15 @@ public class ControllerFile {
 				pm.makePersistent(objPojo);
 			}
 		}
-		
+//		HttpSession sessionObj = req.getSession(true);
+//		sessionObj.setAttribute("userMail",userEmail);
+//		sessionObj.setMaxInactiveInterval(2*60*60);
+//		Cookie usermail = new Cookie("userMail", userEmail);
+//		resp.addCookie(usermail);
 		return new ModelAndView(
 				"viewPage.jsp?nme=" + json_user_details.get("name") + "&mail=" + json_user_details.get("email"));
 
+		
 	}
 
 	@SuppressWarnings("unchecked")
@@ -147,11 +154,12 @@ public class ControllerFile {
 	public String fetchFromLoginTable(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Query q = pm.newQuery(LoginTable.class);
+		q.setOrdering("email asc");
 		@SuppressWarnings("unchecked")
-		List<LoginTable> LoginTableData = (List<LoginTable>) q.execute();
-	
+		List<LoginTable> loginTableData = (List<LoginTable>) q.execute();
+		
 		Gson obj = new Gson();
-		return obj.toJson(LoginTableData);
+		return obj.toJson(loginTableData);
 
 	}
 
@@ -160,6 +168,7 @@ public class ControllerFile {
 	public String toPersistUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		String message = req.getParameter("passingData");
 		String mail = req.getParameter("passingMail").trim();
+		System.out.println(mail);
 		long uniqueId = 0;
 		int likeCount=Integer.parseInt(req.getParameter("passingLike"));
 		Date date = new Date();
@@ -169,7 +178,7 @@ public class ControllerFile {
 		for (count=0;count<1;count++){
 			 uniqueId=randomNumber.nextInt(123456);
 		}
-		if (message != "") {
+		if (message != "" && mail != null) {
 			PersistenceManager pm = PMF.get().getPersistenceManager();
 			UpdateContents content = new UpdateContents();
 			content.setMessage(message);
@@ -224,7 +233,7 @@ public class ControllerFile {
 		
 		
 		Gson obj = new Gson();
-		String returningVariable = obj.toJson(likeData.getLike());
+		String returningVariable = obj.toJson(likeData);
 		return returningVariable;
 		
 	}
