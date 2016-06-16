@@ -1,4 +1,5 @@
 package com.full.feed;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,8 +13,10 @@ import java.util.Random;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -33,7 +36,7 @@ public class ControllerFile {
 
 	@RequestMapping(value = "/login_google")
 	public ModelAndView go() {
-		System.out.println("Checking branch change in git.");
+		System.out.println("hai this is git");
 		return new ModelAndView(
 				"redirect:https://accounts.google.com/o/oauth2/auth?redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&response_type=code&client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com&approval_prompt=force&scope=email&access_type=online");
 	}
@@ -118,8 +121,13 @@ public class ControllerFile {
 				pm.makePersistent(objPojo);
 			}
 		}
-		
+		// HttpSession sessionObj = req.getSession(true);
+		// sessionObj.setAttribute("userMail",userEmail);
+		// sessionObj.setMaxInactiveInterval(2*60*60);
+		// Cookie usermail = new Cookie("userMail", userEmail);
+		// resp.addCookie(usermail);
 		return new ModelAndView(
+
 				"viewPage.jsp?nme=" + json_user_details.get("name") + "&mail=" + json_user_details.get("email"));
 
 	}
@@ -134,11 +142,11 @@ public class ControllerFile {
 		q.setOrdering("date desc");
 
 		String returningVariable = "";
-		
-			List<UpdateContents> updateContentsData = (List<UpdateContents>) q.execute();				
-			Gson obj = new Gson();
-					returningVariable = obj.toJson(updateContentsData);
-		 
+
+		List<UpdateContents> updateContentsData = (List<UpdateContents>) q.execute();
+		Gson obj = new Gson();
+		returningVariable = obj.toJson(updateContentsData);
+
 		return returningVariable;
 	}
 
@@ -147,11 +155,12 @@ public class ControllerFile {
 	public String fetchFromLoginTable(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Query q = pm.newQuery(LoginTable.class);
+		q.setOrdering("email asc");
 		@SuppressWarnings("unchecked")
-		List<LoginTable> LoginTableData = (List<LoginTable>) q.execute();
-	
+		List<LoginTable> loginTableData = (List<LoginTable>) q.execute();
+
 		Gson obj = new Gson();
-		return obj.toJson(LoginTableData);
+		return obj.toJson(loginTableData);
 
 	}
 
@@ -160,16 +169,17 @@ public class ControllerFile {
 	public String toPersistUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		String message = req.getParameter("passingData");
 		String mail = req.getParameter("passingMail").trim();
+		System.out.println(mail);
 		long uniqueId = 0;
-		int likeCount=Integer.parseInt(req.getParameter("passingLike"));
+		int likeCount = Integer.parseInt(req.getParameter("passingLike"));
 		Date date = new Date();
-		long milliSecondTime= date.getTime();
+		long milliSecondTime = date.getTime();
 		long count;
-		Random randomNumber =new Random();
-		for (count=0;count<1;count++){
-			 uniqueId=randomNumber.nextInt(123456);
+		Random randomNumber = new Random();
+		for (count = 0; count < 1; count++) {
+			uniqueId = randomNumber.nextInt(123456);
 		}
-		if (message != "") {
+		if (message != "" && mail != "null") {
 			PersistenceManager pm = PMF.get().getPersistenceManager();
 			UpdateContents content = new UpdateContents();
 			content.setMessage(message);
@@ -183,54 +193,50 @@ public class ControllerFile {
 		Query q = pm.newQuery(LoginTable.class);
 		@SuppressWarnings("unchecked")
 		List<LoginTable> LoginTableData = (List<LoginTable>) q.execute();
-	
+
 		Gson obj = new Gson();
 		return obj.toJson(LoginTableData);
-
 
 	}
 
 	@RequestMapping(value = "/likeUpdate", method = { RequestMethod.GET })
 	@ResponseBody
 	public String toPersistLikeUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		
+
 		String mailId = req.getParameter("passingMail");
-		int userId=Integer.parseInt(req.getParameter("passingId"));
-		
+		int userId = Integer.parseInt(req.getParameter("passingId"));
+
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Query q = pm.newQuery(UpdateContents.class);
 		q.setFilter("id == nameParameter");
 		q.declareParameters("int nameParameter");
 
-			List<UpdateContents> UpdateContentsData = (List<UpdateContents>) q.execute(userId);
-				UpdateContents likeData=UpdateContentsData.get(0);
-				List<String> listOfLikedPeople = likeData.getLikedPeople();
-				System.out.println(listOfLikedPeople);
-				if(listOfLikedPeople.size()==0){
-					listOfLikedPeople.add(mailId);
-					likeData.setLikedPeople(listOfLikedPeople);
-					likeData.setLike((likeData.getLike())+1);
-					pm.makePersistent(likeData);
-				}else{
-					if(listOfLikedPeople.contains(mailId)){
-						
-					}else{
-						listOfLikedPeople.add(mailId);
-					likeData.setLikedPeople(listOfLikedPeople);
-					likeData.setLike((likeData.getLike())+1);
-					pm.makePersistent(likeData);
-					}
-				}
-		
-		
+		List<UpdateContents> UpdateContentsData = (List<UpdateContents>) q.execute(userId);
+		UpdateContents likeData = UpdateContentsData.get(0);
+		List<String> listOfLikedPeople = likeData.getLikedPeople();
+		System.out.println(listOfLikedPeople);
+		if (listOfLikedPeople.size() == 0) {
+			listOfLikedPeople.add(mailId);
+			likeData.setLikedPeople(listOfLikedPeople);
+			likeData.setLike((likeData.getLike()) + 1);
+			pm.makePersistent(likeData);
+		} else {
+			if (listOfLikedPeople.contains(mailId)) {
+
+			} else {
+				listOfLikedPeople.add(mailId);
+				likeData.setLikedPeople(listOfLikedPeople);
+				likeData.setLike((likeData.getLike()) + 1);
+				pm.makePersistent(likeData);
+			}
+		}
+
 		Gson obj = new Gson();
-		String returningVariable = obj.toJson(likeData.getLike());
+		String returningVariable = obj.toJson(likeData);
 		return returningVariable;
-		
+
 	}
 
-	
-	
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value = "/fetchOnlyRespectiveText", method = { RequestMethod.GET })
 	@ResponseBody
@@ -239,14 +245,14 @@ public class ControllerFile {
 
 		String comparingId = req.getParameter("passingFetchedId");
 		System.out.println(comparingId);
-		
+
 		Query q = pm.newQuery(UpdateContents.class);
 		String returningVariable = "";
 		q.setFilter("userMail == '" + comparingId + "'");
-		List<UpdateContents> updateContentsData = (List<UpdateContents>) q.execute();				
+		List<UpdateContents> updateContentsData = (List<UpdateContents>) q.execute();
 		Gson obj = new Gson();
-				returningVariable = obj.toJson(updateContentsData);
-	 
-	return returningVariable;
+		returningVariable = obj.toJson(updateContentsData);
+
+		return returningVariable;
 	}
 }

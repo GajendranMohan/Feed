@@ -16,7 +16,9 @@ public class LoginTable {
 	public void setUname(String name) {
 		this.name = name;
 	}
-
+	
+	
+	
 	@Persistent
 	public String email;
 
@@ -29,4 +31,3 @@ public class LoginTable {
 	}
 
 }
-
