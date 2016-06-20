@@ -3,16 +3,27 @@ package com.full.feed;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -55,7 +66,8 @@ public class ControllerFile {
 
 		URL url = new URL("https://www.googleapis.com/oauth2/v3/token?"
 				+ "client_id=10260336902-1d6k11lto0ng1qlt64ujdpefreiv6ldp.apps.googleusercontent.com"
-				+ "&client_secret=XKZUtW4qzzeBWVq9kd58YzSy&" + "redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&"
+				+ "&client_secret=XKZUtW4qzzeBWVq9kd58YzSy&"
+				+ "redirect_uri=http://1-dot-feedsystem-1334.appspot.com/get_authz_code&"
 				+ "grant_type=authorization_code&" + "code=" + auth_code);
 		HttpURLConnection connect = (HttpURLConnection) url.openConnection();
 		connect.setRequestMethod("POST");
@@ -179,7 +191,7 @@ public class ControllerFile {
 		for (count = 0; count < 1; count++) {
 			uniqueId = randomNumber.nextInt(123456);
 		}
-		if (message != "" && mail != "null") {
+		if (message != "" && mail != "null ") {
 			PersistenceManager pm = PMF.get().getPersistenceManager();
 			UpdateContents content = new UpdateContents();
 			content.setMessage(message);
@@ -203,9 +215,11 @@ public class ControllerFile {
 	@ResponseBody
 	public String toPersistLikeUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
-		String mailId = req.getParameter("passingMail");
+		String likeMailId = req.getParameter("passingMail");
 		int userId = Integer.parseInt(req.getParameter("passingId"));
-
+		String notificationMailId = req.getParameter("passingDynamicMailId");
+		String userFeed = req.getParameter("passingUserFeed");
+		System.out.println(notificationMailId);
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Query q = pm.newQuery(UpdateContents.class);
 		q.setFilter("id == nameParameter");
@@ -214,25 +228,97 @@ public class ControllerFile {
 		List<UpdateContents> UpdateContentsData = (List<UpdateContents>) q.execute(userId);
 		UpdateContents likeData = UpdateContentsData.get(0);
 		List<String> listOfLikedPeople = likeData.getLikedPeople();
-		System.out.println(listOfLikedPeople);
+		// System.out.println(listOfLikedPeople);
 		if (listOfLikedPeople.size() == 0) {
-			listOfLikedPeople.add(mailId);
+			listOfLikedPeople.add(likeMailId);
 			likeData.setLikedPeople(listOfLikedPeople);
 			likeData.setLike((likeData.getLike()) + 1);
 			pm.makePersistent(likeData);
+			String subject = "Congratulations";
+			String msgBody = "Hai" + likeMailId +"  has cheered your "+ userFeed +" in the FeedSystem";
+			Properties propertiesobj = new Properties();
+			propertiesobj.put("mail.smtp.auth", "true"); // authentication purpose
+			propertiesobj.put("mail.smtp.host", "smtp.gmail.com"); // only gmail accout is
+														// possible
+			propertiesobj.put("mail.smtp.port", 587); // default port id for smtp
+			propertiesobj.put("mail.smtp.starttls.enable", "true");
+			Session session = Session.getDefaultInstance(propertiesobj, new javax.mail.Authenticator() {
+				protected PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication("gajendran002@gmail.com", "arunlovesyou");
+				}
+			});
+			try {
+				MimeMessage msg = new MimeMessage(session);
+				msg.setFrom(new InternetAddress("gajendran002@gmail.com", "Admin"));
+				msg.addRecipient(Message.RecipientType.TO, new InternetAddress(notificationMailId));
+				msg.setSubject(subject);
+				msg.setText(msgBody);
+				Transport.send(msg);
+			} catch (IOException e) {
+				System.out.println(e);
+			} catch (MessagingException e) {
+				System.out.println(e);
+			}
+			
 		} else {
-			if (listOfLikedPeople.contains(mailId)) {
+			if (listOfLikedPeople.contains(likeMailId)) {
 
 			} else {
-				listOfLikedPeople.add(mailId);
+				listOfLikedPeople.add(likeMailId);
 				likeData.setLikedPeople(listOfLikedPeople);
 				likeData.setLike((likeData.getLike()) + 1);
 				pm.makePersistent(likeData);
+				String subject = "Congratulations";
+				String msgBody = "Hai "+likeMailId +" has cheered your "+ userFeed +" in the FeedSystem";
+				Properties propertiesobj = new Properties();
+				propertiesobj.put("mail.smtp.auth", "true"); // authentication purpose
+				propertiesobj.put("mail.smtp.host", "smtp.gmail.com"); // only gmail accout is
+															// possible
+				propertiesobj.put("mail.smtp.port", 587); // default port id for smtp
+				propertiesobj.put("mail.smtp.starttls.enable", "true");
+				Session session = Session.getDefaultInstance(propertiesobj, new javax.mail.Authenticator() {
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication("gajendran002@gmail.com", "arunlovesyou");
+					}
+				});
+				try {
+					MimeMessage msg = new MimeMessage(session);
+					msg.setFrom(new InternetAddress("gajendran002@gmail.com", "Admin"));
+					msg.addRecipient(Message.RecipientType.TO, new InternetAddress(notificationMailId));
+					msg.setSubject(subject);
+					msg.setText(msgBody);
+					Transport.send(msg);
+				} catch (IOException e) {
+					System.out.println(e);
+				} catch (MessagingException e) {
+					System.out.println(e);
+				}
+				
 			}
+			
 		}
+
 
 		Gson obj = new Gson();
 		String returningVariable = obj.toJson(likeData);
+		return returningVariable;
+
+	}
+
+	@RequestMapping(value = "/fetchLikedPeople", method = { RequestMethod.GET })
+	@ResponseBody
+	public String fetchLikedPeople(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		String mailId = req.getParameter("passingMail");
+		int userId = Integer.parseInt(req.getParameter("passingId"));
+
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query q = pm.newQuery(UpdateContents.class);
+		q.setFilter("id == nameParameter");
+		q.declareParameters("int nameParameter");
+		List<UpdateContents> results = (List<UpdateContents>) q.execute(userId);
+		UpdateContents c = results.get(0);		
+		Gson obj = new Gson();
+		String returningVariable = obj.toJson(c.getLikedPeople());
 		return returningVariable;
 
 	}
@@ -248,7 +334,7 @@ public class ControllerFile {
 
 		Query q = pm.newQuery(UpdateContents.class);
 		String returningVariable = "";
-		q.setFilter("userMail == '" + comparingId + "'");
+		q.setFilter("userMail == '" + comparingId + "'");	
 		List<UpdateContents> updateContentsData = (List<UpdateContents>) q.execute();
 		Gson obj = new Gson();
 		returningVariable = obj.toJson(updateContentsData);
